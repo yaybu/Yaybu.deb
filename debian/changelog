@@ -1,0 +1,5 @@
+yaybu (3.0-1) unstable; urgency=low
+
+  * Initial Yaybu "all-in-one" package using the Spotify virtualenv packaging tool
+
+ -- John Carr <john.carr@isotoma.com>  Thu, 17 Oct 2013 19:10:59 +0100
