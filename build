@@ -1,0 +1,172 @@
+#! /usr/bin/env python
+
+import os
+import subprocess
+
+
+PBUILDER_CONFIG = """
+BASETGZ="%(root_dir)s/base.tgz"
+DISTRIBUTION="%(dist)s"
+ARCH="%(arch)s"
+DEBOOTSTRAPOPTS=("--arch"  "%(arch)s")
+BUILDRESULT="%(root_dir)s/result"
+APTCACHE="%(root_dir)s/aptcache"
+BUILDPLACE="%(root_dir)s/build"
+HOOKDIR="%(root_dir)s/hook.d"
+"""
+
+PBUILDER_CONFIG_DEBIAN = """
+MIRRORSITE="http://ftp.us.debian.org/debian/"
+COMPONENTS="main contrib non-free"
+"""
+
+PBUILDER_CONFIG_UBUNTU = """
+MIRRORSITE="http://mirrors.kernel.org/ubuntu/"
+COMPONENTS="main restricted universe multiverse"
+"""
+
+PBUILDER_HOOKS = {
+    "A05install_dh_virtualenv": "\n".join([
+        "apt-get install python-setuptools -y",
+        "easy_install virtualenv",
+        "easy_install https://github.com/Jc2k/dh-virtualenv/archive/cleanup-symlinks.zip",
+        "wget --no-check-certificate https://raw.github.com/Jc2k/dh-virtualenv/cleanup-symlinks/debhelper/python_virtualenv.pm -O /usr/share/perl5/Debian/Debhelper/Sequence/python_virtualenv.pm",
+        ]),
+    }
+
+
+INCOMING = """
+IncomingDir: %(root_dir)s/incoming
+TempDir: %(root_dir)s/tmp
+LogDir: %(root_dir)s/log
+"""
+
+
+DISTRIBUTION = """
+Suite: %(dist)s
+Codename: %(dist)s
+Architectures: %(archs)s source
+Components: main
+DebIndices: Packages Release . .gz .bz2
+DscIndices: Sources Release . .gz .bz2
+"""
+
+
+class Build(object):
+
+    def __init__(self, builder, directory):
+        self.builder = builder
+        self.repo = builder.repo
+        self.directory = os.path.abspath(directory)
+        self.dist = builder.dist
+        self.arch = builder.arch
+        if self.arch == "i386":
+            self.pdebuild = ["sudo", "linux32", "pdebuild"]
+        else:
+            self.pdebuild = ["sudo", "pdebuild"]
+
+    def build(self):
+        subprocess.check_call(self.pdebuild + [
+            "--use-pdebuild-internal",
+            "--configfile", self.builder.config_file,
+            "--buildresult", self.repo.incoming_dir,
+            ], cwd=self.directory)
+
+        subprocess.check_call([
+            "reprepro", "-Vb", self.repo.root_dir, "processincoming", "incoming",
+            ], cwd=self.directory)
+
+
+class Builder(object):
+
+    def __init__(self, repo, directory, dist, arch):
+        self.repo = repo
+        self.directory = directory
+        self.dist = dist
+        self.arch = arch
+
+        self.root_dir = os.path.join(directory, "%s-%s" % (dist, arch))
+        self.config_file = os.path.join(self.root_dir, "config")
+
+    def prepare(self):
+        for dir in ("result", "aptcache", "build", "hook.d", ):
+            path = os.path.join(self.root_dir, dir)
+            if not os.path.exists(path):
+                print "mkdir %s" % path
+                os.makedirs(path)
+
+        for k, v in PBUILDER_HOOKS.items():
+            path = os.path.join(self.root_dir, "hook.d", k)
+            with open(path, "w") as fp:
+                fp.write(v)
+            os.chmod(path, 0755)
+
+        with open(self.config_file, "w") as fp:
+            fp.write(PBUILDER_CONFIG % {
+                "root_dir": self.root_dir,
+                "dist": self.dist,
+                "arch": self.arch,
+                })
+            if self.dist in ("saucy", "raring", "quantal", "precise", "lucid", ):
+                fp.write(PBUILDER_CONFIG_UBUNTU)
+            elif self.dist in ("sid", "jessie", "wheezy", "unstable", "testing", "stable", ):
+                fp.write(PBUILDER_CONFIG_DEBIAN)
+
+        if not os.path.exists(os.path.join(self.root_dir, "base.tgz")):
+            print "I: Creating base.tgz (dist=%s, arch=%s)" % (self.dist, self.arch)
+            subprocess.check_call(["sudo", "pbuilder", "--create", "--configfile", self.config_file])
+
+
+class Repository(object):
+
+    def __init__(self, root_dir=None, distributions=None, architectures=None):
+        self.root_dir = os.path.abspath(root_dir or os.getcwd())
+        self.conf_dir = os.path.join(self.root_dir, "conf")
+        self.incoming_dir = os.path.join(self.root_dir, "incoming")
+        self.tmp_dir = os.path.join(self.root_dir, "tmp")
+        self.log_dir = os.path.join(self.root_dir, "log")
+
+        self.distributions = distributions or ["precise", "lucid"]
+        self.architectures = architectures or ["i386", "amd64"]
+
+    def apply(self):
+        for path in (self.root_dir, self.conf_dir, self.incoming_dir, self.tmp_dir, self.log_dir):
+            if not os.path.exists(path):
+                print "Creating %s" % path
+                os.makedirs(path)
+
+        with open(os.path.join(self.conf_dir, "incoming"), "w") as fp:
+            fp.write(INCOMING % {
+                "root_dir": self.root_dir,
+            })
+
+        distributions = []
+        for dist in self.distributions:
+            distributions.append(DISTRIBUTION % {
+                "dist": dist,
+                "archs": " ".join(self.architectures),
+                })
+
+        with open(os.path.join(self.conf_dir, "distributions"), "w") as fp:
+            fp.write("\n\n".join(distributions))
+
+        for d in self.distributions:
+            for a in self.architectures:
+                Builder(self, os.path.join(os.getcwd(), "pbuilder"), d, a).prepare()
+
+    def build(self, directory):
+        for d in self.distributions:
+            for a in self.architectures:
+                Build(Builder(self, os.path.join(os.getcwd(), "pbuilder"), d, a), directory).build()
+
+
+class S3Repository(object):
+    # Sync repo to S3...
+    pass
+
+
+if __name__ == "__main__":
+    r = Repository()
+    r.apply()
+    r.build(".")
+
