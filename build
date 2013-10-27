@@ -3,6 +3,8 @@
 import os
 import subprocess
 
+ALL_UBUNTU = ("saucy", "raring", "quantal", "precise", "lucid", )
+ALL_DEBIAN = ("sid", "jessie", "wheezy", "unstable", "testing", "stable", )
 
 PBUILDER_CONFIG = """
 BASETGZ="%(root_dir)s/base.tgz"
@@ -29,6 +31,7 @@ PBUILDER_HOOKS = {
     "A05install_dh_virtualenv": "\n".join([
         "apt-get install python-setuptools -y",
         "easy_install virtualenv",
+        "easy_install https://github.com/yaybu/debhelper/archive/master.zip",
         "easy_install https://github.com/Jc2k/dh-virtualenv/archive/cleanup-symlinks.zip",
         "wget --no-check-certificate https://raw.github.com/Jc2k/dh-virtualenv/cleanup-symlinks/debhelper/python_virtualenv.pm -O /usr/share/perl5/Debian/Debhelper/Sequence/python_virtualenv.pm",
         ]),
@@ -36,9 +39,11 @@ PBUILDER_HOOKS = {
 
 
 INCOMING = """
+Name: incoming
 IncomingDir: %(root_dir)s/incoming
 TempDir: %(root_dir)s/tmp
 LogDir: %(root_dir)s/log
+Allow: %(allow)s
 """
 
 
@@ -65,7 +70,13 @@ class Build(object):
         else:
             self.pdebuild = ["sudo", "pdebuild"]
 
-    def build(self):
+    def build(self, version=None):
+        debchange = ["debchange", "-b", "--distribution", self.dist]
+        if version:
+            debchange.extend(["-v", "%s~%s1" % (version, self.dist)])
+        debchange.append("Automated release")
+        subprocess.check_call(debchange)
+
         subprocess.check_call(self.pdebuild + [
             "--use-pdebuild-internal",
             "--configfile", self.builder.config_file,
@@ -75,6 +86,11 @@ class Build(object):
         subprocess.check_call([
             "reprepro", "-Vb", self.repo.root_dir, "processincoming", "incoming",
             ], cwd=self.directory)
+
+        subprocess.check_call([
+            "reprepro", "-Vb", self.repo.root_dir, "deleteunreferenced",
+            ], cwd=self.directory)
+
 
 
 class Builder(object):
@@ -107,9 +123,9 @@ class Builder(object):
                 "dist": self.dist,
                 "arch": self.arch,
                 })
-            if self.dist in ("saucy", "raring", "quantal", "precise", "lucid", ):
+            if self.dist in ALL_UBUNTU:
                 fp.write(PBUILDER_CONFIG_UBUNTU)
-            elif self.dist in ("sid", "jessie", "wheezy", "unstable", "testing", "stable", ):
+            elif self.dist in ALL_DEBIAN:
                 fp.write(PBUILDER_CONFIG_DEBIAN)
 
         if not os.path.exists(os.path.join(self.root_dir, "base.tgz")):
@@ -120,14 +136,14 @@ class Builder(object):
 class Repository(object):
 
     def __init__(self, root_dir=None, distributions=None, architectures=None):
-        self.root_dir = os.path.abspath(root_dir or os.getcwd())
+        self.root_dir = os.path.abspath(root_dir or os.path.join(os.getcwd(), "..", "repository"))
         self.conf_dir = os.path.join(self.root_dir, "conf")
         self.incoming_dir = os.path.join(self.root_dir, "incoming")
         self.tmp_dir = os.path.join(self.root_dir, "tmp")
         self.log_dir = os.path.join(self.root_dir, "log")
 
         self.distributions = distributions or ["precise", "lucid"]
-        self.architectures = architectures or ["i386", "amd64"]
+        self.architectures = architectures or ['amd64'] # ["i386", "amd64"]
 
     def apply(self):
         for path in (self.root_dir, self.conf_dir, self.incoming_dir, self.tmp_dir, self.log_dir):
@@ -138,6 +154,7 @@ class Repository(object):
         with open(os.path.join(self.conf_dir, "incoming"), "w") as fp:
             fp.write(INCOMING % {
                 "root_dir": self.root_dir,
+                "allow": " ".join(self.distributions),
             })
 
         distributions = []
@@ -152,12 +169,12 @@ class Repository(object):
 
         for d in self.distributions:
             for a in self.architectures:
-                Builder(self, os.path.join(os.getcwd(), "pbuilder"), d, a).prepare()
+                Builder(self, os.path.join(os.getcwd(), "..", "pbuilder"), d, a).prepare()
 
-    def build(self, directory):
+    def build(self, directory, version=None):
         for d in self.distributions:
             for a in self.architectures:
-                Build(Builder(self, os.path.join(os.getcwd(), "pbuilder"), d, a), directory).build()
+                Build(Builder(self, os.path.join(os.getcwd(), "..", "pbuilder"), d, a), directory).build(version)
 
 
 class S3Repository(object):
@@ -166,7 +183,9 @@ class S3Repository(object):
 
 
 if __name__ == "__main__":
+    import sys
+
     r = Repository()
     r.apply()
-    r.build(".")
+    r.build(".", version=sys.argv[1])
 

@@ -6,7 +6,7 @@ Build-Depends: debhelper, python-dev
 Standards-Version: 3.8.4
 
 Package: python-yaybu
-Architecture: all
+Architecture: i386 amd64
 Depends: ${misc:Depends}, ${python:Depends}
 XB-Python-Version: ${python:Versions}
 Provides: ${python:Provides}
