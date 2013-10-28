@@ -65,12 +65,11 @@ class Build(object):
         self.directory = os.path.abspath(directory)
         self.dist = builder.dist
         self.arch = builder.arch
-        if self.arch == "i386":
-            self.pdebuild = ["sudo", "linux32", "pdebuild"]
-        else:
-            self.pdebuild = ["sudo", "pdebuild"]
+        self.pdebuild = ["sudo", "pdebuild", "--architecture", self.arch]
 
     def build(self, version=None):
+        subprocess.check_call(["git", "checkout", "debian/changelog"], cwd=self.directory)
+
         debchange = ["debchange", "-b", "--distribution", self.dist]
         if version:
             debchange.extend(["-v", "%s~%s1" % (version, self.dist)])
@@ -81,6 +80,7 @@ class Build(object):
             "--use-pdebuild-internal",
             "--configfile", self.builder.config_file,
             "--buildresult", self.repo.incoming_dir,
+            "--debbuildopts", "-b",
             ], cwd=self.directory)
 
         subprocess.check_call([
@@ -103,6 +103,11 @@ class Builder(object):
 
         self.root_dir = os.path.join(directory, "%s-%s" % (dist, arch))
         self.config_file = os.path.join(self.root_dir, "config")
+
+        if self.arch == "i386":
+            self.pbuilder = ["sudo", "linux32", "pbuilder"]
+        else:
+            self.pbuilder = ["sudo", "pbuilder"]
 
     def prepare(self):
         for dir in ("result", "aptcache", "build", "hook.d", ):
@@ -130,7 +135,7 @@ class Builder(object):
 
         if not os.path.exists(os.path.join(self.root_dir, "base.tgz")):
             print "I: Creating base.tgz (dist=%s, arch=%s)" % (self.dist, self.arch)
-            subprocess.check_call(["sudo", "pbuilder", "--create", "--configfile", self.config_file])
+            subprocess.check_call(self.pbuilder + ["--create", "--configfile", self.config_file])
 
 
 class Repository(object):
@@ -143,7 +148,7 @@ class Repository(object):
         self.log_dir = os.path.join(self.root_dir, "log")
 
         self.distributions = distributions or ["precise", "lucid"]
-        self.architectures = architectures or ['amd64'] # ["i386", "amd64"]
+        self.architectures = architectures or ["i386", "amd64"]
 
     def apply(self):
         for path in (self.root_dir, self.conf_dir, self.incoming_dir, self.tmp_dir, self.log_dir):
