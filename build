@@ -54,7 +54,7 @@ Architectures: %(archs)s source
 Components: main
 DebIndices: Packages Release . .gz .bz2
 DscIndices: Sources Release . .gz .bz2
-SignWith: *
+SignWith: default
 """
 
 
@@ -104,11 +104,7 @@ class Builder(object):
 
         self.root_dir = os.path.join(directory, "%s-%s" % (dist, arch))
         self.config_file = os.path.join(self.root_dir, "config")
-
-        if self.arch == "i386":
-            self.pbuilder = ["sudo", "linux32", "pbuilder"]
-        else:
-            self.pbuilder = ["sudo", "pbuilder"]
+        self.pbuilder = ["sudo", "pbuilder"]
 
     def prepare(self):
         for dir in ("result", "aptcache", "build", "hook.d", ):
@@ -179,6 +175,10 @@ class Repository(object):
 
     def build(self, directory, version=None):
         self.before_build()
+
+        print "Deleting unreferenced"
+        subprocess.check_call(["reprepro", "-Vb", self.root_dir, "deleteunreferenced"])
+
         for d in self.distributions:
             for a in self.architectures:
                 Build(Builder(self, os.path.join(os.getcwd(), "..", "pbuilder"), d, a), directory).build(version)
