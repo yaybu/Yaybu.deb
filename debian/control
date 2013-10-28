@@ -1,4 +1,5 @@
 Source: yaybu
+Homepage: http://www.yaybu.com/
 Maintainer: John Carr <john.carr@isotoma.com>
 Section: python
 Priority: optional
@@ -6,7 +7,8 @@ Build-Depends: debhelper, python-dev
 Standards-Version: 3.8.4
 
 Package: python-yaybu
-Architecture: i386 amd64
+Homepage: http://www.yaybu.com/
+Architecture: any
 Depends: ${misc:Depends}, ${python:Depends}
 XB-Python-Version: ${python:Versions}
 Provides: ${python:Provides}
