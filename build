@@ -104,7 +104,7 @@ class Builder(object):
 
         self.root_dir = os.path.join(directory, "%s-%s" % (dist, arch))
         self.config_file = os.path.join(self.root_dir, "config")
-        self.pbuilder = ["sudo", "/usr/bin/pbuilder"]
+        self.pbuilder = ["sudo", "/usr/sbin/pbuilder"]
 
     def prepare(self):
         for dir in ("result", "aptcache", "build", "hook.d", ):
