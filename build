@@ -66,7 +66,7 @@ class Build(object):
         self.directory = os.path.abspath(directory)
         self.dist = builder.dist
         self.arch = builder.arch
-        self.pdebuild = ["sudo", "pdebuild", "--architecture", self.arch]
+        self.pdebuild = ["sudo", "/usr/bin/pdebuild", "--architecture", self.arch]
 
     def build(self, version=None):
         subprocess.check_call(["git", "checkout", "debian/changelog"], cwd=self.directory)
@@ -104,7 +104,7 @@ class Builder(object):
 
         self.root_dir = os.path.join(directory, "%s-%s" % (dist, arch))
         self.config_file = os.path.join(self.root_dir, "config")
-        self.pbuilder = ["sudo", "pbuilder"]
+        self.pbuilder = ["sudo", "/usr/bin/pbuilder"]
 
     def prepare(self):
         for dir in ("result", "aptcache", "build", "hook.d", ):
