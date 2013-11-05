@@ -195,21 +195,24 @@ class Repository(object):
 
 class S3Repository(Repository):
 
+    def __init__(self, channel="nightlies"):
+        self.channel = channel
+
     def after_build(self):
         # We sync twice - this is to ensure that when we delete files we don't cause a window where apt is broken
         # Unfortunately we can't fix all races because apt-get update might have been run an hour before someone calls apt-get install - or indeed worse
         print "Uploading new stuff"
         for d in ("pool", "dists"):
-            subprocess.check_call(["s3cmd", "sync", os.path.join(self.root_dir, d) + "/", "s3://yaybu.com/nightlies/apt/%s/" % d])
+            subprocess.check_call(["s3cmd", "sync", os.path.join(self.root_dir, d) + "/", "s3://yaybu.com/%s/apt/%s/" % (self.channel, d)])
         print "Deleting old stuff"
         for d in ("pool", "dists"):
-            subprocess.check_call(["s3cmd", "sync", "--delete-removed", os.path.join(self.root_dir, d) + "/", "s3://yaybu.com/nightlies/apt/%s/" % d])
+            subprocess.check_call(["s3cmd", "sync", "--delete-removed", os.path.join(self.root_dir, d) + "/", "s3://yaybu.com/%s/apt/%s/" % (self.channel, d)])
 
 
 if __name__ == "__main__":
     import sys
 
-    r = S3Repository()
+    r = S3Repository(sys.argv[2])
     r.apply()
     r.build(".", version=sys.argv[1])
 
