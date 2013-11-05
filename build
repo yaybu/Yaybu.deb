@@ -195,9 +195,10 @@ class Repository(object):
 
 class S3Repository(Repository):
 
-    def __init__(self, channel="nightlies", **kwargs):
-        super(S3Repository, self).__init__(**kwargs)
+    def __init__(self, channel, root_dir=None, distributions=None, architectures=None):
         self.channel = channel
+        root_dir = os.path.abspath(root_dir or os.path.join(os.getcwd(), "..", channel, "repository"))
+        super(S3Repository, self).__init__(root_dir=root_dir, distributions=distributions, architectures=architectures)
 
     def after_build(self):
         # We sync twice - this is to ensure that when we delete files we don't cause a window where apt is broken
