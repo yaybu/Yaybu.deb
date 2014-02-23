@@ -1,10 +1,8 @@
---find-links https://github.com/surfly/gevent/releases/download/1.0rc3/gevent-1.0rc3.tar.gz#egg=gevent-1.0rc3
-
 # Dependencies for runtime
 Jinja2==2.7
 MarkupSafe==0.18
 apache-libcloud==0.13.0
-gevent==1.0rc3
+gevent==1.0
 greenlet==0.4.1
 lockfile==0.9.1
 paramiko==1.11.0
