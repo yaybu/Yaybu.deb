@@ -1,2 +1,2 @@
--r ../src/yaybu/requirements.txt
+-r ../src/yaybu/requirements/yaybu.txt
 
