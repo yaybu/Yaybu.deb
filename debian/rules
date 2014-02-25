@@ -16,7 +16,7 @@ unexport LDFLAGS
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
 
 export PIP_DOWNLOAD_CACHE=$(shell pwd)/../downloads
-export PIP_BUILD_DIR=$(shell pwd)/../build
+# export PIP_BUILD_DIR=$(shell pwd)/../build
 export PIP_USE_WHEELS=true
 export PIP_FIND_LINKS=file://$(shell pwd)/../wheels
 
@@ -25,4 +25,4 @@ export PIP_FIND_LINKS=file://$(shell pwd)/../wheels
 
 override_dh_virtualenv:
 	pip wheel -r requirements/yaybu.deb.txt
-	dh_virtualenv --extra-index-url http://example.com
+	dh_virtualenv
