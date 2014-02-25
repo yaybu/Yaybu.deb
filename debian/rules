@@ -16,10 +16,10 @@ unexport LDFLAGS
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
 
 DIR=$(cd ..; pwd)
-export PIP_DOWNLOAD_CACHE=$DIR/downloads
-export PIP_BUILD_DIR=$DIR/build
+export PIP_DOWNLOAD_CACHE=$(DIR)/downloads
+export PIP_BUILD_DIR=$(DIR)/build
 export PIP_USE_WHEELS=true
-export PIP_FIND_LINKS=$DIR/wheels
+export PIP_FIND_LINKS=$(DIR)/wheels
 
 %:
 	dh $@ --with python-virtualenv
