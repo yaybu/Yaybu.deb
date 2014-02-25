@@ -15,6 +15,14 @@ unexport LDFLAGS
 # Clean path
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
 
+export PIP_DOWNLOAD_CACHE=../downloads
+export PIP_BUILD_DIR=../build
+export PIP_USE_WHEELS=true
+export PIP_FIND_LINKS=../wheels
+
 %:
 	dh $@ --with python-virtualenv
 
+override_dh_virtualenv:
+	pip wheel -r requirements/yaybu.deb.txt
+	dh_virtualenv --extra-index-url http://example.com
