@@ -3,13 +3,15 @@
 import os
 import subprocess
 
+
 ALL_UBUNTU = ("saucy", "raring", "quantal", "precise", "lucid", )
-ALL_DEBIAN = ("sid", "jessie", "wheezy", "unstable", "testing", "stable", )
+ALL_DEBIAN = ("unstable", "testing", "stable", )
+ALL_RASPBIAN = ("wheezy", )
 
 PBUILDER_CONFIG = """
 BASETGZ="%(root_dir)s/base.tgz"
 DISTRIBUTION="%(dist)s"
-ARCH="%(arch)s"
+ARCHITECTURE="%(arch)s"
 DEBOOTSTRAPOPTS=("--arch"  "%(arch)s")
 BUILDRESULT="%(root_dir)s/result"
 APTCACHE="%(root_dir)s/aptcache"
@@ -25,6 +27,15 @@ COMPONENTS="main contrib non-free"
 PBUILDER_CONFIG_UBUNTU = """
 MIRRORSITE="http://mirrors.kernel.org/ubuntu/"
 COMPONENTS="main restricted universe multiverse"
+"""
+
+PBUILDER_CONFIG_RASPBIAN = """
+MIRRORSITE=http://mirror.netcologne.de/raspbian/raspbian/
+COMPONENTS="main"
+DEBOOTSTRAPOPTS=( '--variant=buildd' '--no-check-gpg' )
+DEBOOTSTRAP=qemu-debootstrap
+ARCHITECTURE=armhf
+DEBBUILDOPTS="-j1"
 """
 
 PBUILDER_HOOKS = {
@@ -129,6 +140,8 @@ class Builder(object):
                 fp.write(PBUILDER_CONFIG_UBUNTU)
             elif self.dist in ALL_DEBIAN:
                 fp.write(PBUILDER_CONFIG_DEBIAN)
+            elif self.dist in ALL_RASPBIAN:
+                fp.write(PBUILDER_CONFIG_RASPBIAN)
 
         if not os.path.exists(os.path.join(self.root_dir, "base.tgz")):
             print "I: Creating base.tgz (dist=%s, arch=%s)" % (self.dist, self.arch)
@@ -144,7 +157,7 @@ class Repository(object):
         self.tmp_dir = os.path.join(self.root_dir, "tmp")
         self.log_dir = os.path.join(self.root_dir, "log")
 
-        self.distributions = distributions or ["precise", "lucid"]
+        self.distributions = distributions or ["stable"]
         self.architectures = architectures or ["i386", "amd64"]
 
     def apply(self):

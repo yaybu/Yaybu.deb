@@ -1,3 +1,9 @@
+yaybu (1~stable1) stable; urgency=low
+
+  * Automated release
+
+ -- John Carr <john@isotoma.com>  Mon, 25 Nov 2013 22:15:48 +0000
+
 yaybu (3.0-1) unstable; urgency=low
 
   * Initial Yaybu "all-in-one" package using the Spotify virtualenv packaging tool
