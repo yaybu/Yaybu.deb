@@ -12,6 +12,9 @@ export PIP_FIND_LINKS=file://$(shell pwd)/../wheels
 %:
 	dh $@
 
+override_dh_auto_clean:
+	true
+
 override_dh_auto_build:
 	true
 
