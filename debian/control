@@ -3,7 +3,7 @@ Homepage: http://www.yaybu.com/
 Maintainer: John Carr <john.carr@isotoma.com>
 Section: python
 Priority: optional
-Build-Depends: debhelper, python-dev
+Build-Depends: debhelper, python-dev, libssl-dev
 Standards-Version: 3.8.4
 
 Package: python-yaybu
