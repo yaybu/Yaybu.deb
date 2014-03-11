@@ -1,6 +1,6 @@
 -r requirements/yaybu.deb.txt
 
---alow-external cx_Freeze
+--allow-external cx_Freeze
 --allow-unverified cx_Freeze
 cx_Freeze==4.3.2
 
