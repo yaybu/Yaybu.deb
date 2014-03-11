@@ -1,5 +1,14 @@
 #!/usr/bin/make -f
 
+# Clean path
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
+
+export PIP_DOWNLOAD_CACHE=$(shell pwd)/../downloads
+# export PIP_BUILD_DIR=$(shell pwd)/../build
+export PIP_WHEEL_DIR=$(shell pwd)/../wheels
+export PIP_USE_WHEELS=true
+export PIP_FIND_LINKS=file://$(shell pwd)/../wheels
+
 %:
 	dh $@
 
@@ -7,5 +16,7 @@ override_dh_auto_build:
 	true
 
 override_dh_auto_install:
-	env
-	python setup.py install_exe -d $(PWD)/debian/python-yaybu/usr/lib/yaybu/
+	virtualenv venv
+	./venv/bin/pip wheel -r requirements/yaybu.deb.txt
+	./venv/bin/pip install -r requirements.txt
+	./venv/bin/python setup.py install_exe -d $(PWD)/debian/python-yaybu/usr/lib/yaybu/
