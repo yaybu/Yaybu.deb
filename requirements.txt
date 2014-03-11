@@ -1,5 +1,7 @@
 -r requirements/yaybu.deb.txt
 
+cx_Freeze==4.3.2
+
 src/yay
 src/yaybu
 
