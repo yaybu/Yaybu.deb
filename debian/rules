@@ -13,12 +13,11 @@ export PIP_FIND_LINKS=file://$(shell pwd)/../wheels
 	dh $@
 
 override_dh_auto_clean:
-	rm -rf venv
+	true
 
 override_dh_auto_build:
 	pip wheel -r requirements/yaybu.deb.txt
-	virtualenv venv
-	./venv/bin/pip install -r requirements.txt
+	pip install -r requirements.txt
 
 override_dh_auto_install:
-	./venv/bin/python setup.py install_exe -d $(PWD)/debian/python-yaybu/usr/lib/yaybu/
+	python setup.py install_exe -d $(PWD)/debian/python-yaybu/usr/lib/yaybu/
